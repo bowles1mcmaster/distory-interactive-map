@@ -97,20 +97,20 @@
     });
 
     map.addLayer({
-      id: 'highlighted-countries',
-      type: 'fill',
-      source: 'countries',
-      'source-layer': 'country_boundaries',
-      paint: {
-        'fill-color': '#0080ff',
-        'fill-opacity': [
-          'case',
-          ['boolean', ['feature-state', 'hover'], false],
-          0.4,
-          0
-        ]
-      }
-    });
+  id: 'highlighted-countries',
+  type: 'fill',
+  source: 'countries',
+  'source-layer': 'country_boundaries',
+  paint: {
+    'fill-color': '#0080ff',
+    'fill-opacity': [
+      'case',
+      ['boolean', ['feature-state', 'hover'], false],
+      0.4,  // Opacity on hover
+      0.2   // Opacity when not hovering
+    ]
+  }
+});
 
     let hoveredCountryId = null;
 
