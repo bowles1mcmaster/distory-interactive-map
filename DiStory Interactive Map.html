@@ -1,0 +1,160 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>IDD Resistance Map Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+  <style>
+    body { margin:0; padding:0; font-family: sans-serif; }
+    #map { position:absolute; top:0; bottom:0; width:100%; }
+    .info-box {
+      position: absolute;
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      max-width: 400px;
+      top: 20px;
+      left: 20px;
+      z-index: 10;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+<div class="info-box" id="infoBox"></div>
+
+<script>
+  mapboxgl.accessToken = 'pk.eyJ1IjoidGVzdHVzZXJtYXBib3giLCJhIjoiY2t2bDl3OWJvMDRlaTJ2bzB6MnoycWtkNCJ9.XfBQMXkR03b5-0HEG-E60w';
+
+  const map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/light-v10',
+    center: [0, 30],
+    zoom: 1.4
+  });
+
+  const countryData = {
+    "Australia": `
+      <strong>Australia</strong><br/>
+      <em>First Peoples Disability Network – Australia</em><br/>
+      - Advocacy and Policy Reform: Promoting systemic change to address inequities experienced by Aboriginal and Torres Strait Islander people with disabilities.<br/>
+      - Training and Capacity Building: Offering programs to empower communities and service providers.<br/>
+      - <a href='https://fpdn.org.au' target='_blank'>Visit Website</a>
+    `,
+    "Canada": `
+      <strong>Canada</strong><br/>
+      <em>Ase Community Foundation for Black Canadians with Disabilities</em><br/>
+      - Education, Research, and Policy Change: Addressing systemic inequities at the intersection of Blackness and disability.<br/>
+      - <a href='https://asecommunityfoundation.com/' target='_blank'>Visit Website</a><br/><br/>
+      <em>Indigenous Disability Canada / BCANDS</em><br/>
+      - Disability Services and Advocacy: Offering disability-related services to Indigenous people in Canada.<br/>
+      - <a href='https://www.bcands.bc.ca/' target='_blank'>Visit Website</a>
+    `,
+    "Europe": `
+      <strong>Europe</strong><br/>
+      <em>Inclusion International</em><br/>
+      - Inclusive Education, Employment, and Deinstitutionalization: Promoting policies for full inclusion and community-based alternatives.<br/>
+      - <a href='https://inclusion-international.org/' target='_blank'>Visit Website</a><br/><br/>
+      <em>European Disability Forum</em><br/>
+      - Policy and Legislation: Influencing EU policies to promote the rights of people with disabilities.<br/>
+      - <a href='https://www.edf-feph.org/' target='_blank'>Visit Website</a>
+    `,
+    "Israel": `
+      <strong>Israel</strong><br/>
+      <em>Israel Elwyn</em><br/>
+      - Advocacy and Empowerment: Providing supported living, employment, and developmental services.<br/>
+      - <a href='https://israelelwyn.org.il' target='_blank'>Visit Website</a>
+    `,
+    "United Kingdom": `
+      <strong>United Kingdom</strong><br/>
+      <em>United Response</em><br/>
+      - Supported Living and Community Services: Supporting people with learning disabilities and autism to live independently.<br/>
+      - <a href='https://www.unitedresponse.org.uk' target='_blank'>Visit Website</a><br/><br/>
+      <em>Rix Centre</em><br/>
+      - Digital Inclusion and Advocacy: Developing digital communication tools to empower self-advocates.<br/>
+      - <a href='https://www.rixinclusiveresearch.org/about/' target='_blank'>Visit Website</a>
+    `,
+    "United States": `
+      <strong>United States</strong><br/>
+      <em>Learning Ally</em><br/>
+      - Audiobook Solutions and Literacy Support: Helping struggling readers through human-narrated audiobooks.<br/>
+      - <a href='https://learningally.org' target='_blank'>Visit Website</a><br/><br/>
+      <em>Disability Rights International (DRI)</em><br/>
+      - Global Advocacy and Human Rights: Advocating to end institutionalization and promote inclusion.<br/>
+      - <a href='https://www.driadvocacy.org' target='_blank'>Visit Website</a>
+    `
+  };
+
+  map.on('load', () => {
+    map.addSource('countries', {
+      type: 'vector',
+      url: 'mapbox://mapbox.country-boundaries-v1'
+    });
+
+    map.addLayer({
+      id: 'highlighted-countries',
+      type: 'fill',
+      source: 'countries',
+      'source-layer': 'country_boundaries',
+      paint: {
+        'fill-color': '#0080ff',
+        'fill-opacity': [
+          'case',
+          ['boolean', ['feature-state', 'hover'], false],
+          0.4,
+          0
+        ]
+      }
+    });
+
+    let hoveredCountryId = null;
+
+    map.on('mousemove', 'highlighted-countries', (e) => {
+      if (e.features.length > 0) {
+        if (hoveredCountryId !== null) {
+          map.setFeatureState({
+            source: 'countries',
+            sourceLayer: 'country_boundaries',
+            id: hoveredCountryId
+          }, { hover: false });
+        }
+        hoveredCountryId = e.features[0].id;
+        map.setFeatureState({
+          source: 'countries',
+          sourceLayer: 'country_boundaries',
+          id: hoveredCountryId
+        }, { hover: true });
+      }
+    });
+
+    map.on('mouseleave', 'highlighted-countries', () => {
+      if (hoveredCountryId !== null) {
+        map.setFeatureState({
+          source: 'countries',
+          sourceLayer: 'country_boundaries',
+          id: hoveredCountryId
+        }, { hover: false });
+      }
+      hoveredCountryId = null;
+    });
+
+    map.on('click', 'highlighted-countries', (e) => {
+      const countryName = e.features[0].properties.name_en;
+      const infoBox = document.getElementById('infoBox');
+      if (countryData[countryName]) {
+        infoBox.innerHTML = countryData[countryName];
+        infoBox.style.display = 'block';
+      } else {
+        infoBox.innerHTML = `<strong>${countryName}</strong><br/>No data available yet.`;
+        infoBox.style.display = 'block';
+      }
+    });
+  });
+</script>
+</body>
+</html>
